@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'main.dart';
 import 'signup.dart';
 import 'forgotpassword.dart';
@@ -12,23 +15,40 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController fullNameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    emailController.dispose();
+    fullNameController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => DashboardScreen()),
+      final response = await http.post(
+        Uri.parse('http://192.168.214.226/librareadsmob/lib/login.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'full_name': fullNameController.text.trim(),
+          'password': passwordController.text.trim(),
+        }),
       );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == 'success') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => DashboardScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'])),
+        );
+      }
     }
   }
 
@@ -48,7 +68,6 @@ class _LoginPageState extends State<LoginPage> {
           Container(
             color: const Color(0xFF121921).withOpacity(0.7),
           ),
-
           SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
@@ -66,7 +85,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 60),
-
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -79,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Email',
+                            'Full Name',
                             style: TextStyle(
                               color: Color(0xFFA28D4F),
                               fontFamily: 'Montserrat',
@@ -89,21 +107,22 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 8),
                           TextFormField(
-                            controller: emailController,
+                            controller: fullNameController,
                             style: const TextStyle(color: Colors.black),
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: Colors.white.withOpacity(0.9),
-                              hintText: 'example@mail.com',
+                              hintText: 'John Doe',
                               hintStyle: const TextStyle(color: Colors.grey),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            validator: (value) => value != null && value.contains('@')
-                                ? null
-                                : 'Enter valid email',
+                            validator: (value) =>
+                                value != null && value.isNotEmpty
+                                    ? null
+                                    : 'Full name is required',
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -143,12 +162,12 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                               ),
                             ),
-                            validator: (value) => value != null && value.length >= 6
-                                ? null
-                                : 'Password must be at least 6 characters',
+                            validator: (value) =>
+                                value != null && value.length >= 6
+                                    ? null
+                                    : 'Password must be at least 6 characters',
                           ),
                           const SizedBox(height: 12),
-
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -172,7 +191,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 30),
                   ElevatedButton(
                     onPressed: _login,
@@ -189,7 +207,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 40),
                   TextButton(
                     onPressed: () {

@@ -47,5 +47,6 @@ if ($conn->query($sqlInsert) === TRUE) {
     echo json_encode(['status' => false, 'message' => 'Error saat registrasi: ' . $conn->error]);
 }
 
+
 $conn->close();
 ?>

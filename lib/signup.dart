@@ -27,7 +27,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     setState(() => _isLoading = true);
 
-    final url = Uri.parse('http://200.100.100.1/librareadsmob/lib/register.php'); // Ganti dengan URL endpoint yang benar
+    final url = Uri.parse('http://192.168.214.226/librareadsmob/lib/register.php'); // Ganti dengan URL endpoint yang benar
 
     try {
       final response = await http.post(
@@ -39,7 +39,7 @@ class _SignUpPageState extends State<SignUpPage> {
           'password': passwordController.text.trim(),
           'phone': '', // optional, kosongkan jika tidak pakai
         }),
-      );
+              );
 
       final data = jsonDecode(response.body);
       setState(() => _isLoading = false);
