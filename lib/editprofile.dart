@@ -1,19 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_client.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String currentName;
-  final String currentUsername;
-  final String currentPassword;
 
-  EditProfileScreen({
+  const EditProfileScreen({
+    Key? key,
     required this.currentName,
-    required this.currentUsername,
-    required this.currentPassword,
-  });
+  }) : super(key: key);
 
   @override
   _EditProfileScreenState createState() => _EditProfileScreenState();
@@ -21,167 +16,183 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
-  late TextEditingController _usernameController;
-  late TextEditingController _passwordController;
-  bool _obscurePassword = true;
-
-  File? _imageFile;
-  final picker = ImagePicker();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   void initState() {
-    _nameController = TextEditingController(text: widget.currentName);
-    _usernameController = TextEditingController(text: widget.currentUsername);
-    _passwordController = TextEditingController(text: widget.currentPassword);
     super.initState();
+    _nameController = TextEditingController(text: widget.currentName);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
-  void saveChanges() {
-    Navigator.pop(context, {
-      'name': _nameController.text,
-      'username': _usernameController.text,
-      'password': _passwordController.text,
-    });
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  // Fungsi untuk menyimpan perubahan username ke server
+  Future<void> _saveProfileChanges() async {
+    if (_formKey.currentState!.validate() && !_isLoading) {
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _isLoading = true;
       });
-      await uploadProfilePicture(_imageFile!);
+
+      String newName = _nameController.text.trim();
+
+      try {
+        // Ambil token/user_id dari SharedPreferences jika diperlukan
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? userId = prefs.getString('user_id');
+        String? token = prefs.getString('token');
+
+        // Kirim data ke server untuk memperbarui username
+        final dio = ApiClient.instance.dio;
+        final response = await dio.post(
+          'http://192.168.100.22:8080/librareadsmob/lib/update_profile.php',
+          data: {
+            'username': newName,
+            'user_id': userId, // Tambahkan user_id jika diperlukan
+            // 'token': token, // Tambahkan token jika diperlukan
+          },
+        );
+
+        if (response.statusCode == 200 && response.data['status'] == 'success') {
+          // Setelah berhasil mengupdate di server, simpan perubahan ke SharedPreferences
+          await prefs.setString('username', newName);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Username berhasil diperbarui!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // Return data yang telah diupdate ke halaman sebelumnya
+            Navigator.pop(context, newName);
+          }
+        } else {
+          if (mounted) {
+            String errorMessage = response.data['message'] ?? 'Gagal memperbarui username. Coba lagi.';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print('Error updating profile: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Terjadi kesalahan jaringan, coba lagi.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
-
-Future<void> uploadProfilePicture(File imageFile) async {
-  final prefs = await SharedPreferences.getInstance();
-  final userId = prefs.getInt('user_id');
-
-  if (userId == null) {
-    print("User belum login.");
-    return;
-  }
-
-  var request = http.MultipartRequest(
-    'POST',
-    Uri.parse('http://192.168.214.226/librareadsmob/lib/updateprofilepicture.php'),
-  );
-
-  request.fields['user_id'] = userId.toString();
-  request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
-
-  var response = await request.send();
-
-  if (response.statusCode == 200) {
-    print('Upload foto berhasil');
-  } else {
-    print('Upload foto gagal');
-  }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F111D),
       appBar: AppBar(
+        title: const Text('Edit Username', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF0F111D),
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(color: Colors.white),
-        ),
-        leading: const BackButton(color: Colors.white),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFA28D4F),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.save, color: Color(0xFFA28D4F)),
+                  onPressed: _saveProfileChanges,
+                )
+        ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey[800],
-                        backgroundImage: _imageFile != null
-                            ? FileImage(_imageFile!)
-                            : AssetImage('assets/default_profile.png') as ImageProvider,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 4,
-                        child: CircleAvatar(
-                          radius: 15,
-                          backgroundColor: Colors.orange,
-                          child: Icon(Icons.edit, size: 16, color: Colors.black),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-              TextField(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: <Widget>[
+              const SizedBox(height: 20),
+              TextFormField(
                 controller: _nameController,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  labelStyle: TextStyle(color: Colors.grey),
-                  enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey)),
-                  focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.orange)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _usernameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  labelStyle: TextStyle(color: Colors.grey),
-                  enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey)),
-                  focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.orange)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: const TextStyle(color: Colors.grey),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                  labelText: 'Username',
+                  labelStyle: const TextStyle(color: Color(0xFFA28D4F)),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey[700]!),
                   ),
-                  enabledBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey)),
                   focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.orange)),
+                    borderSide: BorderSide(color: Color(0xFFA28D4F)),
+                  ),
+                  errorBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.red),
+                  ),
+                  focusedErrorBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.red),
+                  ),
+                  helperText: "Masukkan username baru Anda.",
+                  helperStyle: TextStyle(color: Colors.grey[600]),
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Username tidak boleh kosong!';
+                  }
+                  if (value.trim().length < 3) {
+                    return 'Username minimal 3 karakter!';
+                  }
+                  if (value.trim().length > 20) {
+                    return 'Username maksimal 20 karakter!';
+                  }
+                  // Validasi karakter yang diizinkan
+                  if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
+                    return 'Username hanya boleh berisi huruf, angka, dan underscore!';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 30),
+              // Tambahan tombol save untuk kemudahan
+              if (!_isLoading)
+                ElevatedButton(
+                  onPressed: _saveProfileChanges,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA28D4F),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Simpan Perubahan',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
             ],
           ),
         ),

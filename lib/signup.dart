@@ -13,7 +13,7 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
@@ -27,17 +27,16 @@ class _SignUpPageState extends State<SignUpPage> {
 
     setState(() => _isLoading = true);
 
-    final url = Uri.parse('http://192.168.214.226/librareadsmob/lib/register.php'); // Ganti dengan URL endpoint yang benar
+    final url = Uri.parse('http://192.168.100.22:8080/librareadsmob/lib/register.php');
 
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'full_name': fullNameController.text.trim(),
+          'username': usernameController.text.trim(),
           'email': emailController.text.trim(),
           'password': passwordController.text.trim(),
-          'phone': '', // optional, kosongkan jika tidak pakai
         }),
               );
 
@@ -67,7 +66,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void dispose() {
-    fullNameController.dispose();
+    usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
@@ -117,8 +116,8 @@ class _SignUpPageState extends State<SignUpPage> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          buildLabel('Full Name'),
-                          buildTextField(fullNameController, 'Your full name'),
+                          buildLabel('Username'),
+                          buildTextField(usernameController, 'Username'),
                           const SizedBox(height: 16),
                           buildLabel('Email'),
                           buildTextField(

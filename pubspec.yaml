@@ -38,10 +38,21 @@ dependencies:
   cookie_jar: ^4.0.8
   dio_cookie_manager: ^3.1.1
   path_provider: ^2.1.5
+  html: ^0.15.0
+  flutter_pdfview: ^1.0.0
+  pdfx: ^2.9.1
+  url_launcher: ^6.2.5
+  uni_links: ^0.5.1
+
+
+
+
+
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
+    
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -55,38 +66,54 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
+
+
   assets:
     - assets/LibraReadsBG.jpg
     - assets/WebDevelopment.jpg
     - assets/PHPbyExample.jpg
     - assets/PythonDataAnalysis.jpg
-    - assets/ComputerProgramming.jpg
-    - assets/FunctionalProgramming.jpg
+    - assets/cover/ComputerProgramming.jpg
     - assets/PragmaticProgrammer.jpg
-    - assets/MachineLearning.jpg
+    - assets/cover/MachineLearning.jpg
     - assets/ThinkPython.jpg
-    - assets/CodingAbsoluteBeginners.jpg
-    - assets/python.jpg
-    - assets/html.jpg
-    - assets/java.jpg
-    - assets/cplus.jpg
-    - assets/php.jpg
-    - assets/mysql.png
+    - assets/cover/CodingAbsoluteBeginners.jpg
+    - assets/images/python.jpg
+    - assets/images/html.jpg
+    - assets/images/java.jpg
+    - assets/images/cplus.jpg
+    - assets/images/php.jpg
+    - assets/images/mysql.png
     - assets/logo.png
     - assets/ExtremeC.png
+    - assets/cover/FunctionalProgramming.jpg
     - assets/SQLCookbook.png
     - assets/EffectiveModernC++.png
     - assets/ExploringJavaScript.png
-    - assets/AppDevelopmentFlutter.jpg
-    - assets/DataScience101.jpg
+    - assets/cover/AppDevelopmentFlutter.jpg
+    - assets/cover/DataScience101.jpg
     - assets/MasterCoding.jpg
-    - assets/pp.jpg
-    - assets/default_profile.jpg
+    - assets/images/pp.jpg
+    - assets/cover/default_profile.jpg
+    - assets/cover/OpenDataStructure.jpg
+    - assets/cover/LearningMySQLbyExample.jpg
+    - assets/cover/PracticalC++Programming.jpg
+    - assets/cover/ModernC++Tutorials.jpg
+    - assets/SQLTheComplete.jpg
+    - assets/cover/EffectiveModernC++.jpg
+    - assets/cover/Elements of Data Science.jpg
+    - assets/cover/ModernC.jpg
+    - assets/EffectiveModernC++.pdf
+    - assets/Elements of Data Science.pdf
+    - assets/FunctionalProgramming.pdf 
+    - assets/LearningMySQLbyExample.pdf
+    - assets/ModernC.pdf
+    - assets/ModernC++Tutorials.pdf
+    - assets/OpenDataStructure.pdf
+    - assets/PracticalC++Programming.pdf
+    - assets/SQLTheComplete.pdf
+    - assets/ThinkPython.pdf
 
 
   # To add assets to your application, add an assets section, like this:

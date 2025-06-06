@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -10,24 +12,38 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailController = TextEditingController();
 
-  void _sendResetLink() {
-    String email = _emailController.text.trim();
+void _sendResetLink() async {
+  String email = _emailController.text.trim();
 
-    if (!email.contains('@')) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Invalid Email'),
-          content: const Text('Please enter a valid email address that contains "@"'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } else {
+  if (!email.contains('@')) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Invalid Email'),
+        content: const Text('Please enter a valid email address that contains "@"'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  try {
+      final response = await http.post(
+      Uri.parse('http://192.168.100.22:8080/librareadsmob/lib/forgotpassword.php'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    print('Raw body: ${response.body}');
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && responseData['status'] == true) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -44,8 +60,40 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ],
         ),
       );
+    } else {
+      // Gagal, tampilkan pesan error dari server
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text(responseData['message'] ?? 'Failed to send reset link.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
+  } catch (e) {
+    // Error jaringan atau lainnya
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text('Failed to send reset link: $e'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
