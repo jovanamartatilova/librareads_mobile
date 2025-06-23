@@ -1,11 +1,9 @@
 <?php
-// Mengatur header untuk JSON
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Koneksi ke database MySQL
 $host = "localhost";
 $user = "root";
 $pass = "";
@@ -13,7 +11,6 @@ $db = "librareads";
 
 $conn = new mysqli($host, $user, $pass, $db);
 
-// Cek koneksi
 if ($conn->connect_error) {
     http_response_code(500);
     echo json_encode([
@@ -26,17 +23,13 @@ if ($conn->connect_error) {
 $conn->set_charset("utf8");
 
 try {
-    // Ambil parameter dari request
     $book_id = isset($_GET['book_id']) ? (int)$_GET['book_id'] : 0;
     $chunk_number = isset($_GET['chunk_number']) ? (int)$_GET['chunk_number'] : 1;
 
     if ($book_id <= 0) {
         throw new Exception("Invalid book ID");
     }
-
-    // Jika chunk_number tidak ditentukan, ambil semua chunk
     if (isset($_GET['chunk_number'])) {
-        // Ambil chunk tertentu
         $query = "SELECT bc.*, b.title, b.author 
                     FROM book_contents bc 
                     JOIN books b ON bc.book_id = b.id 
@@ -44,7 +37,6 @@ try {
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ii", $book_id, $chunk_number);
     } else {
-        // Ambil semua chunk untuk buku tertentu
         $query = "SELECT bc.*, b.title, b.author 
                     FROM book_contents bc 
                     JOIN books b ON bc.book_id = b.id 

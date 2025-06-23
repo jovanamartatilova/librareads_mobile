@@ -35,15 +35,21 @@ dependencies:
   http: ^1.3.0
   shared_preferences: ^2.2.2
   dio: ^5.4.3+1
-  cookie_jar: ^4.0.8
-  dio_cookie_manager: ^3.1.1
-  path_provider: ^2.1.5
+  cookie_jar: ^4.0.0
+  dio_cookie_manager: ^3.0.0
   html: ^0.15.0
   flutter_pdfview: ^1.0.0
   pdfx: ^2.9.1
   url_launcher: ^6.2.5
   uni_links: ^0.5.1
-
+  cached_network_image: ^3.3.1
+  mime_type: ^1.0.0
+  syncfusion_flutter_pdfviewer: ^26.1.40
+  path: ^1.8.0 # Untuk path operations
+  provider: ^6.0.5          # Untuk manajemen state
+  screen_brightness: ^1.0.0+1 # Untuk mengontrol kecerahan layar
+  intl: ^0.19.0
+  flutter_svg: ^2.0.11
 
 
 
@@ -77,15 +83,39 @@ flutter:
     - assets/cover/ComputerProgramming.jpg
     - assets/PragmaticProgrammer.jpg
     - assets/cover/MachineLearning.jpg
-    - assets/ThinkPython.jpg
+    - assets/cover/ThinkPython.jpg
+    - assets/cover/CompilerDesigninC.jpeg
+    - assets/cover/DataStructures&AlgorithmainC++.jpeg
+    - assets/cover/AlgorithmsinC.jpeg
+    - assets/cover/ExploringJavascript.jpg
+    - assets/cover/ThinkStats.jpg
+    - assets/cover/BeejGuidetoProgramming.jpg
+    - assets/cover/EloquentJavaScript.jpg
+    - assets/cover/ShellScripting.jpg
+    - assets/cover/DeepJavaScript.jpg
+    - assets/cover/TheLinux.jpg
+    - assets/cover/TenStepstoLinuxSurvival.jpg
+    - assets/cover/Tackling TypeScript.jpg
+    - assets/cover/ABooksOnC.jpeg
+    - assets/cover/ThinkDataStructures.jpg
     - assets/cover/CodingAbsoluteBeginners.jpg
+    - assets/cover/ThinkPythonv2.jpg
+    - assets/cover/Linux101Hacks.jpg
+    - assets/cover/CProgramming.png
     - assets/images/python.jpg
     - assets/images/html.jpg
     - assets/images/java.jpg
     - assets/images/cplus.jpg
+    - assets/images/NodeJS.png
     - assets/images/php.jpg
+    - assets/images/LINUX.jpeg
+    - assets/images/JavaScript.png
     - assets/images/mysql.png
+    - assets/cover/IntroductiontoPython.png
+    - assets/images/c.jpg
     - assets/logo.png
+    - assets/logob.png
+    - assets/logoa.png
     - assets/ExtremeC.png
     - assets/cover/FunctionalProgramming.jpg
     - assets/SQLCookbook.png
@@ -97,23 +127,49 @@ flutter:
     - assets/images/pp.jpg
     - assets/cover/default_profile.jpg
     - assets/cover/OpenDataStructure.jpg
+    - assets/cover/Introduction to ML with Python.png
+    - assets/cover/CompilerDesigninC.jpeg
     - assets/cover/LearningMySQLbyExample.jpg
     - assets/cover/PracticalC++Programming.jpg
     - assets/cover/ModernC++Tutorials.jpg
-    - assets/SQLTheComplete.jpg
+    - assets/cover/SQLTheComplete.jpg
     - assets/cover/EffectiveModernC++.jpg
     - assets/cover/Elements of Data Science.jpg
     - assets/cover/ModernC.jpg
-    - assets/EffectiveModernC++.pdf
-    - assets/Elements of Data Science.pdf
-    - assets/FunctionalProgramming.pdf 
-    - assets/LearningMySQLbyExample.pdf
-    - assets/ModernC.pdf
-    - assets/ModernC++Tutorials.pdf
-    - assets/OpenDataStructure.pdf
-    - assets/PracticalC++Programming.pdf
-    - assets/SQLTheComplete.pdf
-    - assets/ThinkPython.pdf
+    - assets/pdfs/10001.pdf
+    - assets/pdfs/10002.pdf
+    - assets/pdfs/10003.pdf
+    - assets/pdfs/10004.pdf
+    - assets/pdfs/10005.pdf
+    - assets/pdfs/10006.pdf
+    - assets/pdfs/10007.pdf
+    - assets/pdfs/10008.pdf
+    - assets/pdfs/10009.pdf
+    - assets/pdfs/10010.pdf
+    - assets/pdfs/10011.pdf
+    - assets/pdfs/10012.pdf
+    - assets/pdfs/10013.pdf
+    - assets/pdfs/10014.pdf
+    - assets/pdfs/10015.pdf
+    - assets/pdfs/10016.pdf
+    - assets/pdfs/10017.pdf
+    - assets/pdfs/10018.pdf
+    - assets/pdfs/10019.pdf
+    - assets/pdfs/10020.pdf
+    - assets/pdfs/10021.pdf
+    - assets/pdfs/10022.pdf
+    - assets/pdfs/10023.pdf
+    - assets/pdfs/10024.pdf
+    - assets/avatars/1.svg
+    - assets/avatars/2.svg
+    - assets/avatars/3.svg
+    - assets/avatars/4.svg
+    - assets/avatars/5.svg
+    - assets/avatars/6.svg
+    - assets/avatars/7.svg
+    - assets/avatars/8.svg
+    - assets/avatars/9.svg
+    - assets/avatars/10.svg
 
 
   # To add assets to your application, add an assets section, like this:

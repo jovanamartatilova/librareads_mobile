@@ -1,7 +1,7 @@
 <?php
 $host = "localhost";
 $user = "root";
-$pass = ""; // ganti jika pakai password MySQL
+$pass = "";
 $db = "librareads";
 
 $conn = new mysqli($host, $user, $pass, $db);

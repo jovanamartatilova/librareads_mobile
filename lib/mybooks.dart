@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'main.dart';
 import 'catalog.dart';
 import 'profile.dart';
+import 'reading.dart';
+import 'books.dart';
 
 class MyBooksScreen extends StatefulWidget {
   const MyBooksScreen({Key? key}) : super(key: key);
@@ -10,13 +14,81 @@ class MyBooksScreen extends StatefulWidget {
   State<MyBooksScreen> createState() => _MyBooksScreenState();
 }
 
-class _MyBooksScreenState extends State<MyBooksScreen> {
-  final List<Map<String, String>> books = [
-    {'title': 'Extreme C', 'author': 'Kamran Amini', 'image': 'assets/ExtremeC.png'},
-    {'title': 'SQL Cookbook', 'author': 'Anthony Molinaro', 'image': 'assets/SQLCookbook.png'},
-    {'title': 'Effective Modern C++', 'author': 'Scott Meyers', 'image': 'assets/EffectiveModernC++.png'},
-    {'title': 'Exploring JavaScript', 'author': 'Dr. Axel Rauschmayer', 'image': 'assets/ExploringJavaScript.png'},
-  ];
+class _MyBooksScreenState extends State<MyBooksScreen> with WidgetsBindingObserver {
+  List<Book> _savedBooks = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedBooks();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadSavedBooks();
+    }
+  }
+
+  Future<void> _loadSavedBooks() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> savedBookIds = prefs.getStringList('savedBookIds') ?? [];
+
+      if (savedBookIds.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _savedBooks = [];
+        });
+        return;
+      }
+
+      List<Book> loadedBooks = [];
+      for (String id in savedBookIds) {
+        final book = allBooks.firstWhere(
+          (b) => b.id == id,
+          orElse: () {
+            debugPrint('Book with ID $id not found in local allBooks. It might have been removed or is a legacy ID.');
+            return Book(
+              id: id,
+              title: 'Unknown Book',
+              author: 'Unknown Author',
+              imagePath: 'assets/cover/placeholder_default.jpg',
+              description: 'This book could not be found locally.',
+              category: '',
+              pageCount: 0,
+              pdfAssetPath: '',
+            );
+          },
+        );
+        loadedBooks.add(book);
+      }
+
+      setState(() {
+        _savedBooks = loadedBooks;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading your bookshelf. Please try again.';
+        _isLoading = false;
+      });
+      debugPrint('Error loading saved books from SharedPreferences or allBooks: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,156 +98,414 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
         backgroundColor: const Color(0xFF0F111D),
         elevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        leading: null,
         title: const Text(
-          'Bookshelf',
+          'BookShelf',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
+            fontFamily: 'Montserrat',
             color: Colors.white,
+            letterSpacing: 1.2,
           ),
         ),
+        actions: const <Widget>[],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'My Books (${books.length})',
+              'BookShelf (${_savedBooks.length})',
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 color: Colors.white,
-                fontFamily: 'Roboto',
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Montserrat',
               ),
             ),
             const SizedBox(height: 20),
-            Expanded(
-              child: GridView.builder(
-                itemCount: books.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.6,
-                ),
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {},
-                    child: Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 5,
-                      color: const Color(0xFF121921),
-                      child: Column(
-                        children: [
-                          Expanded(
-                      child: Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.all(8.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          books[index]['image']!,
-                          fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  books[index]['title']!,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Roboto',
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  books[index]['author']!,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'Roboto',
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+            _isLoading
+                ? _buildLoadingState()
+                : _errorMessage.isNotEmpty
+                    ? _buildErrorState(_errorMessage)
+                    : _savedBooks.isEmpty
+                        ? _buildEmptyState()
+                        : Expanded(
+                            child: GridView.builder(
+                              itemCount: _savedBooks.length,
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: 0.7,
+                              ),
+                              itemBuilder: (context, index) {
+                                final book = _savedBooks[index];
+                                return _buildSavedBookCard(book);
+                              },
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: const BoxDecoration(
-          color: Color(0xFF0F111D),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+      bottomNavigationBar: const BottomNavBarMyBooks(),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: Color(0xFFA28D4F)),
+          SizedBox(height: 16),
+          Text(
+            'Loading your books...',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+              fontFamily: 'Montserrat',
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            size: 72,
+            color: Colors.redAccent,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            message,
+            style: const TextStyle(
+              color: Colors.redAccent,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Montserrat',
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _loadSavedBooks,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFA28D4F),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              elevation: 8,
+            ),
+            icon: const Icon(Icons.refresh),
+            label: const Text(
+              'Try Again',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Montserrat',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.bookmark_border,
+            size: 72,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'No books saved yet!\nDiscover new books in the Catalog.',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 18,
+              fontStyle: FontStyle.italic,
+              fontFamily: 'Montserrat',
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const CatalogScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFA28D4F),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              elevation: 8,
+            ),
+            icon: const Icon(Icons.search),
+            label: const Text(
+              'Explore Catalog',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Montserrat',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedBookCard(Book book) {
+    final bool isLocalImage = book.imagePath.startsWith('assets/');
+    final String placeholderAssetPath = 'assets/cover/placeholder_default.jpg';
+
+    return Semantics(
+      label: 'Book: ${book.title} by ${book.author}',
+      button: true,
+      child: GestureDetector(
+        onTap: () async {
+          if (book.pdfAssetPath.isNotEmpty) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BookReadingScreen(
+                  bookTitle: book.title,
+                  bookAuthor: book.author,
+                  bookImage: book.imagePath,
+                  bookFileUrl: book.pdfAssetPath,
+                  bookId: book.id,
+                ),
+              ),
+            );
+            _loadSavedBooks();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('PDF file not available for this book.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(4, 8),
+              ),
+            ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1A1D29),
+                const Color(0xFF0F111D).withOpacity(0.9),
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: isLocalImage
+                            ? Image.asset(
+                                book.imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint('Error loading MyBooks asset image: $error');
+                                  return Image.asset(
+                                    placeholderAssetPath,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: book.imagePath,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(color: Color(0xFFA28D4F)),
+                                ),
+                                errorWidget: (context, url, error) {
+                                  debugPrint('Error loading MyBooks network image: $error');
+                                  return Image.asset(
+                                    placeholderAssetPath,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.7),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1A1D29),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text(
+                          book.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text(
+                          book.author,
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                            fontFamily: 'Poppins',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class BottomNavBarMyBooks extends StatelessWidget {
+  const BottomNavBarMyBooks({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 80,
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F111D),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black45,
+            blurRadius: 10,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.transparent,
           type: BottomNavigationBarType.fixed,
           selectedItemColor: const Color(0xFFA28D4F),
-          unselectedItemColor: Colors.grey,
-          iconSize: 30,
+          unselectedItemColor: Colors.grey[600],
+          currentIndex: 2,
+          iconSize: 28,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Montserrat',
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.normal,
+            fontFamily: 'Montserrat',
+          ),
           elevation: 0,
           onTap: (index) {
-            String currentRoute = ModalRoute.of(context)?.settings.name ?? '';
-
-            if (index == 0 && currentRoute != 'dashboard') {
+            if (index == 0) {
               Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => DashboardScreen()),
-              );
-            } else if (index == 1 && currentRoute != 'catalog') {
+                  context, MaterialPageRoute(builder: (context) => const DashboardScreen()));
+            } else if (index == 1) {
               Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => CatalogScreen()),
-              );
-            } else if (index == 2 && currentRoute != 'my_books') {
+                  context, MaterialPageRoute(builder: (context) => const CatalogScreen()));
+            } else if (index == 2) {
+              // Already on MyBooksScreen
+            } else if (index == 3) {
               Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => MyBooksScreen()),
-              );
-            } else if (index == 3 && currentRoute != 'profile') {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => ProfileScreen()),
-              );
+                  context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
             }
           },
           items: [
             BottomNavigationBarItem(
-              icon: Image.asset('assets/logo.png', width: 30),
-              label: '',
+              icon: Image.asset('assets/logo.png', width: 28, color: Colors.grey[600]),
+              activeIcon: Image.asset('assets/logo.png', width: 28, color: const Color(0xFFA28D4F)),
+              label: 'Home',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.menu_book, size: 30),
-              label: '',
+              icon: Icon(Icons.menu_book),
+              label: 'Catalog',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark_border, size: 30),
-              label: '',
+              icon: Icon(Icons.bookmark),
+              label: 'BookShelf',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline, size: 30),
-              label: '',
+              icon: Icon(Icons.person),
+              label: 'Profile',
             ),
           ],
         ),

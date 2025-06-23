@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart'; // Menggantikan http
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import 'api_client.dart';
 import 'main.dart';
 import 'signup.dart';
 import 'forgotpassword.dart';
+import 'package:flutter/foundation.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -30,61 +30,83 @@ class _LoginPageState extends State<LoginPage> {
   void _login() async {
     if (_formKey.currentState!.validate() && !_isLoading) {
       setState(() {
-        _isLoading = true;
+        _isLoading = true; // Set loading state to true
       });
 
-      final dio = ApiClient.instance.dio;
-
       try {
-        final response = await dio.post(
-          'login.php',
-          data: {
-            'username': usernameController.text.trim(),
-            'password': passwordController.text.trim(),
-          },
+        final loginResult = await ApiClient.instance.loginUser(
+          username: usernameController.text.trim(),
+          password: passwordController.text.trim(),
         );
 
-        final data = response.data;
-
-        if (data['status'] == 'success') {
-          // Jika login berhasil, simpan data user ke SharedPreferences
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          final user = data['user'];
-          await prefs.setString('user_id', user['id'].toString());
-          await prefs.setString('username', user['username']);
-          await prefs.setString('email', user['email']);
-
-          // Arahkan ke halaman utama (Dashboard)
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => DashboardScreen()),
-            );
-          }
+        if (mounted && loginResult['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login successful!'), backgroundColor: Color(0xFFA28D4F)),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
         } else {
-          // Tampilkan pesan error dari server jika login gagal
+          String errorMessage = loginResult['message'] ?? 'An unknown error occurred during login.';
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(data['message'] ?? 'Terjadi kesalahan')),
+              SnackBar(
+              content: Text(
+                errorMessage,
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor:  const Color(0xFF121921),
+            ),
             );
           }
+          debugPrint('LOGIN_PAGE: Login failed via ApiClient: $errorMessage');
         }
       } on DioException catch (e) {
-        // Tangani jika ada error jaringan atau koneksi ke server
+        String errorMessage = 'Error: Failed to connect to the server. Check your connection.';
+        if (e.response != null) {
+          errorMessage = e.response!.data is Map && e.response!.data['message'] != null
+              ? e.response!.data['message']
+              : 'An error occurred from the server: ${e.response!.statusCode}';
+          debugPrint('LOGIN_PAGE: Dio Error Response: ${e.response!.statusCode} - ${e.response!.data}');
+        } else if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
+          errorMessage = 'Unable to connect to the server. Make sure the server is running and the IP address/port is correct';
+          debugPrint('LOGIN_PAGE: Dio Connection Error: ${e.message}');
+        } else {
+          errorMessage = 'An unknown error occurred.: ${e.message}';
+          debugPrint('LOGIN_PAGE: Dio Other Error: ${e.message}');
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: Gagal terhubung ke server. Periksa koneksi Anda.')),
+            SnackBar(
+              content: Text(
+                errorMessage,
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor:  const Color(0xFF121921),
+            ),
           );
         }
-        print('DioException saat login: $e');
-      } finally {
-        // Hentikan loading indicator setelah proses selesai
+        debugPrint('LOGIN_PAGE: DioException during login: $e');
+      } catch (e) {
+        debugPrint('LOGIN_PAGE: Unexpected error during login: $e');
         if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('An unexpected error occurred: ${e.toString()}'), backgroundColor:   const Color(0xFF121921)),
+          );
         }
+      } finally {
+        _resetLoadingState();
       }
+    }
+  }
+
+  void _resetLoadingState() {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -148,17 +170,19 @@ class _LoginPageState extends State<LoginPage> {
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: Colors.white.withOpacity(0.9),
-                              hintText: 'John Doe',
+                              hintText: 'Enter your username',
                               hintStyle: const TextStyle(color: Colors.grey),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            validator: (value) =>
-                                value != null && value.isNotEmpty
-                                    ? null
-                                    : 'Full name is required',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Username is required';
+                            }
+                            return null;
+                          }
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -214,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
                                 );
                               },
                               child: const Text(
-                                'Forgot your password?',
+                                'Forgot Password?',
                                 style: TextStyle(
                                   color: Color(0xFFA28D4F),
                                   fontFamily: 'Montserrat',
@@ -256,7 +280,7 @@ class _LoginPageState extends State<LoginPage> {
                       );
                     },
                     child: const Text(
-                      'Don\'t have an account? Sign Up',
+                      'Dont have an account? Sign up now!',
                       style: TextStyle(
                         color: Color(0xFFA28D4F),
                         fontFamily: 'Montserrat',
